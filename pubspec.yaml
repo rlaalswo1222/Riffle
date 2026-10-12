@@ -1,0 +1,52 @@
+name: barlink
+description: 서로 다른 파트 악보의 같은 마디를 잇는 합주 도구
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # EnsembleSync 와 같은 것만 쓴다. 합칠 때 pubspec 을 손댈 일이 없도록.
+  http: ^1.2.1
+  web_socket_channel: ^2.4.0
+  file_picker: ^8.1.2
+  pdfx: ^2.6.0
+  pdfrx: ^2.4.7
+  # 악보 PDF의 마디선을 그림이 아니라 선 데이터로 읽는다(pdfrx가 쓰는 PDFium 그대로).
+  pdfium_dart: ^0.2.5
+  ffi: ^2.2.0
+  shared_preferences: ^2.5.5
+  crypto: ^3.0.7
+  image: ^4.9.2
+  # 실시간 악보 추종용 마이크 입력. Bandly에는 녹음 패키지가 없어 이것만 예외로 추가했다.
+  record: ^6.2.1
+  youtube_explode_dart: ^3.1.0
+  path_provider: ^2.1.6
+  # 연주 중 화면이 꺼지지 않게
+  wakelock_plus: ^1.5.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # 토스와 같은 한글 글꼴. SIL Open Font License (assets/fonts/Pretendard-LICENSE.txt)
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.otf
+          weight: 700
+        - asset: assets/fonts/Pretendard-ExtraBold.otf
+          weight: 800

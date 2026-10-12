@@ -1,0 +1,14 @@
+build/
+.dart_tool/
+.flutter-plugins*
+server/uploads/
+server/__pycache__/
+*.iml
+.idea/
+
+# 옛 캡스톤 자료와 개인 메모(이 앱과 무관)
+/BANDNS_*.pdf
+/BANDNS_*.md
+/BarLink_*.pdf
+/debug.log
+/tmp/
