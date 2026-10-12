@@ -36,6 +36,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # 앱 아이콘과 같은 캐릭터 그림(첫 화면에 쓴다)
+  assets:
+    - assets/images/riffle_icon.png
+    - assets/images/riffle_mascot.png
+
   # 토스와 같은 한글 글꼴. SIL Open Font License (assets/fonts/Pretendard-LICENSE.txt)
   fonts:
     - family: Pretendard

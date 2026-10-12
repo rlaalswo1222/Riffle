@@ -102,6 +102,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       children: <Widget>[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(7),
+                          child: Image.asset('assets/images/riffle_icon.png',
+                              width: 26, height: 26),
+                        ),
+                        const SizedBox(width: 8),
                         const Text(kAppName,
                             style: TextStyle(
                                 fontFamily: Toss.font,
@@ -123,12 +129,25 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
                           children: <Widget>[
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(8, 0, 8, 18),
-                              child: Text(
-                                entries.isEmpty
-                                    ? '연주할 악보를\n먼저 넣어 주세요'
-                                    : '오늘은 어떤 곡을\n연주할까요?',
-                                style: Toss.title.copyWith(fontSize: 26),
+                              padding: const EdgeInsets.fromLTRB(8, 0, 0, 10),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: <Widget>[
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Text(
+                                        entries.isEmpty
+                                            ? '연주할 악보를\n먼저 넣어 주세요'
+                                            : '오늘은 어떤 곡을\n연주할까요?',
+                                        style: Toss.title.copyWith(fontSize: 26),
+                                      ),
+                                    ),
+                                  ),
+                                  // 앱 아이콘의 캐릭터가 악보 위로 빼꼼 내다본다.
+                                  Image.asset('assets/images/riffle_mascot.png',
+                                      width: 112),
+                                ],
                               ),
                             ),
                             if (entries.isEmpty)
