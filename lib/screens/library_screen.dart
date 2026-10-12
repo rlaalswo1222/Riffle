@@ -102,12 +102,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
                       children: <Widget>[
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(7),
-                          child: Image.asset('assets/images/riffle_icon.png',
-                              width: 26, height: 26),
-                        ),
-                        const SizedBox(width: 8),
                         const Text(kAppName,
                             style: TextStyle(
                                 fontFamily: Toss.font,
