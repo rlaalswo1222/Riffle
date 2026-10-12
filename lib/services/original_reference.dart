@@ -54,6 +54,15 @@ class OriginalReference {
     );
   }
 
+  /// 예전에 유튜브에서 받아 맞춘 원곡의 영상 ID(썸네일용). 없으면 null.
+  static Future<String?> recordedVideoId(String key) async {
+    try {
+      return await OriginalReferenceStore(await _dir()).recordedVideoId(key);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// 예전에 맞춰 둔 원곡 파일. 도돌이 인식이 바뀌어 연주 순서가 달라졌을 때
   /// 이 파일로 다시 맞춘다. 파일이 없으면 null.
   static Future<(String, String, bool)?> previousAudio(String key) async {

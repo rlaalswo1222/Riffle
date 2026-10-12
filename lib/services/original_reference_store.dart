@@ -93,6 +93,22 @@ class OriginalReferenceStore {
     }
   }
 
+  /// 예전에 유튜브에서 받아 맞춘 원곡의 영상 ID. 받은 파일 이름이 `<영상 ID>.m4a`라
+  /// 파일을 지운 뒤에도 기록에서 알 수 있다. 휴대폰 파일로 맞췄으면 null.
+  Future<String?> recordedVideoId(String key) async {
+    try {
+      final json =
+          jsonDecode(await _meta(key).readAsString()) as Map<String, dynamic>;
+      final audio = json['audio'] as String?;
+      if (audio == null || json['audio_owned'] == false) return null;
+      final name = audio.split(RegExp(r'[/\\]')).last;
+      final match = RegExp(r'^([A-Za-z0-9_-]{11})\.[A-Za-z0-9]+$').firstMatch(name);
+      return match?.group(1);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _removeDownloadedAudio(String path) async {
     try {
       if (await _isDownloadedAudio(path)) await File(path).delete();

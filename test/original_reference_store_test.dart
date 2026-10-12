@@ -212,6 +212,26 @@ void main() {
     expect(await store.load('score', path), isNotNull);
     expect(await file.exists(), isTrue);
   });
+
+  test('유튜브에서 받아 맞춘 원곡은 지운 파일 이름에서 영상 ID를 알아낸다', () async {
+    Future<void> meta(String audio, {bool owned = true}) =>
+        File('${originals.path}/score.json').writeAsString(_reference().encodeMeta(<String, dynamic>{
+          'path': OriginalReferenceStore.signature(path),
+          'audio': audio,
+          'audio_owned': owned,
+        }));
+
+    await meta('/data/user/0/com.example.barlink/files/originals/LX6I-E31QUI.m4a');
+    expect(await store.recordedVideoId('score'), 'LX6I-E31QUI');
+    await meta(r'C:\originals\NWPkoLAciLg.webm');
+    expect(await store.recordedVideoId('score'), 'NWPkoLAciLg');
+    // 휴대폰 파일로 맞춘 원곡은 영상이 없다.
+    await meta('/storage/emulated/0/Music/먹이사슬.mp3', owned: false);
+    expect(await store.recordedVideoId('score'), isNull);
+    await meta('/storage/emulated/0/Music/my song.m4a');
+    expect(await store.recordedVideoId('score'), isNull);
+    expect(await store.recordedVideoId('없는 악보'), isNull);
+  });
 }
 
 ReferenceTrack _reference() => ReferenceTrack(

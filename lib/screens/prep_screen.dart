@@ -185,7 +185,7 @@ class _PrepScreenState extends State<PrepScreen> {
           }
         },
       );
-      await _build(file, c.title, downloaded: true);
+      await _build(file, c.title, downloaded: true, videoId: c.id);
     } catch (error) {
       if (mounted) {
         setState(() => _originalWork = null);
@@ -199,10 +199,13 @@ class _PrepScreenState extends State<PrepScreen> {
         await FilePicker.platform.pickFiles(type: FileType.audio);
     final String? file = picked?.files.single.path;
     if (file == null || !mounted) return;
-    await _build(file, picked!.files.single.name);
+    await _build(file, picked!.files.single.name, fromPhone: true);
   }
 
-  Future<void> _build(String file, String label, {bool downloaded = false}) async {
+  /// [videoId]: 유튜브에서 받은 원곡이면 그 영상(목록 썸네일용).
+  /// [fromPhone]: 휴대폰 파일로 바꿨으면 예전 영상 썸네일을 지운다.
+  Future<void> _build(String file, String label,
+      {bool downloaded = false, String? videoId, bool fromPhone = false}) async {
     final ChordChart? chart = _chart;
     if (chart == null) return;
     setState(() {
@@ -222,6 +225,13 @@ class _PrepScreenState extends State<PrepScreen> {
       _e
         ..hasOriginal = true
         ..originalSkipped = false;
+      if (videoId != null) {
+        _e.videoId = videoId;
+        unawaited(ScoreLibrary.saveThumbnail(_e.key, videoId));
+      } else if (fromPhone) {
+        _e.videoId = null;
+        unawaited(ScoreLibrary.removeThumbnail(_e.key));
+      }
       await ScoreLibrary.save(_e);
       if (!mounted) return;
       setState(() {

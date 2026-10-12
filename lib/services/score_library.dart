@@ -19,6 +19,9 @@ class LibraryEntry {
   double? bpm;
   bool hasOriginal;
   bool originalSkipped;
+
+  /// 원곡으로 연결한 유튜브 영상 ID. 휴대폰 파일로 연결했거나 없으면 null.
+  String? videoId;
   DateTime openedAt;
 
   LibraryEntry({
@@ -32,6 +35,7 @@ class LibraryEntry {
     this.bpm,
     this.hasOriginal = false,
     this.originalSkipped = false,
+    this.videoId,
     required this.openedAt,
   });
 
@@ -49,6 +53,7 @@ class LibraryEntry {
         if (bpm != null) 'bpm': bpm,
         'has_original': hasOriginal,
         'original_skipped': originalSkipped,
+        if (videoId != null) 'video_id': videoId,
         'opened_at': openedAt.toIso8601String(),
       };
 
@@ -63,6 +68,7 @@ class LibraryEntry {
         bpm: (j['bpm'] as num?)?.toDouble(),
         hasOriginal: j['has_original'] as bool? ?? false,
         originalSkipped: j['original_skipped'] as bool? ?? false,
+        videoId: j['video_id'] as String?,
         openedAt: DateTime.tryParse(j['opened_at'] as String? ?? '') ?? DateTime.now(),
       );
 }
@@ -124,10 +130,44 @@ class ScoreLibrary {
     await File('${dir.path}/${e.key}.json').writeAsString(jsonEncode(e.toJson()));
   }
 
+  /// 원곡 영상 썸네일(앱 폴더에 받아 둔 것). 없으면 null.
+  static Future<File?> thumbnailOf(String key) async {
+    final File f = File('${(await _dir()).path}/$key.jpg');
+    return await f.exists() ? f : null;
+  }
+
+  /// 유튜브 썸네일을 받아 둔다. 합주실에 인터넷이 없어도 목록에 보이게 하려는 것이다.
+  /// 실패해도 목록은 첫 글자로 보여 주면 되므로 조용히 넘어간다.
+  static Future<File?> saveThumbnail(String key, String videoId) async {
+    final HttpClient client = HttpClient();
+    try {
+      final HttpClientRequest request =
+          await client.getUrl(Uri.parse('https://i.ytimg.com/vi/$videoId/mqdefault.jpg'));
+      final HttpClientResponse response = await request.close();
+      if (response.statusCode != 200) return null;
+      final BytesBuilder bytes = BytesBuilder();
+      await for (final List<int> chunk in response) {
+        bytes.add(chunk);
+      }
+      final File f = File('${(await _dir()).path}/$key.jpg');
+      await f.writeAsBytes(bytes.takeBytes());
+      return f;
+    } catch (_) {
+      return null;
+    } finally {
+      client.close();
+    }
+  }
+
+  static Future<void> removeThumbnail(String key) async {
+    final File f = File('${(await _dir()).path}/$key.jpg');
+    if (await f.exists()) await f.delete();
+  }
+
   static Future<void> remove(String key) async {
     final Directory dir = await _dir();
     await (await analysisCache()).remove(key);
-    for (final String ext in <String>['pdf', 'json']) {
+    for (final String ext in <String>['pdf', 'json', 'jpg']) {
       final File f = File('${dir.path}/$key.$ext');
       if (await f.exists()) await f.delete();
     }

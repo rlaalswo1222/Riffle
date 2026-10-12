@@ -7,6 +7,26 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final LocalScoreAnalyzer analyzer = LocalScoreAnalyzer();
 
+  test('부른 사람은 작사·작곡이 아니라 "OOO 노래" 줄에서 읽는다', () {
+    String artistOf(String body) => analyzer
+        .analyzePages(<ScorePdfPageText>[
+          _page(title: '노래는 불빛처럼 달린다', body: body, measures: const <int>[5, 9, 13]),
+        ])
+        .artist;
+    // 제목의 "노래는"이나 가사의 "노래"는 부른 사람 표시가 아니다.
+    expect(
+      artistOf('akbobada.com\n내 노래 들어줘\n페퍼톤스 (PEPPERTONES) 작사\n'
+          '페퍼톤스 (PEPPERTONES) 작곡\n유다빈밴드 노래\n'
+          "유다빈밴드의 'Twenty Plenty' (2024.04) 수록곡"),
+      '유다빈밴드',
+    );
+    expect(artistOf("김세진 작사\n서정진 작곡 IU(아이유)의 1집 'Growing Up' (2009.04)수록곡 IU(아이유) 노래"), '아이유');
+    expect(artistOf('윤하 작사\n윤하, JEWNO 작곡\n윤하 (YOUNHA) 노래'), '윤하');
+    // "노래" 줄이 없으면 수록곡 줄에서, 그것도 없으면 작사가를 쓰지 않고 비워 둔다.
+    expect(artistOf("한로로 작사\n한로로의 '먹이사슬' (2024.04) 수록곡"), '한로로');
+    expect(artistOf('김세진 작사\n서정진 작곡'), '');
+  });
+
   test('파일 해시 없이 제목·내용·마디 번호로 같은 곡을 연결한다', () {
     final LocalScoreAnalysis keyboard =
         analyzer.analyzePages(<ScorePdfPageText>[

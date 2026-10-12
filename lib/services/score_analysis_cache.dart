@@ -123,7 +123,7 @@ class CachedScoreAnalysis {
 /// PDF 바이트로 만든 악보 키별 영구 캐시. 캐시 문제는 PDF 분석으로 복구한다.
 class ScoreAnalysisCache {
   // PDF 분석·코드 추출·연주 순서 계산이 바뀌면 올려서 기존 결과를 갱신한다.
-  static const int version = 5;
+  static const int version = 6;
 
   final Directory directory;
 

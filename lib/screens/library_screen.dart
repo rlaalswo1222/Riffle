@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../app_info.dart';
+import '../services/original_reference.dart';
 import '../services/score_library.dart';
 import '../ui/toss.dart';
 import 'prep_screen.dart';
@@ -19,6 +21,9 @@ class LibraryScreen extends StatefulWidget {
 class _LibraryScreenState extends State<LibraryScreen> {
   List<LibraryEntry>? _entries;
 
+  /// 곡마다 받아 둔 원곡 영상 썸네일.
+  final Map<String, File> _thumbs = <String, File>{};
+
   @override
   void initState() {
     super.initState();
@@ -27,7 +32,31 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   Future<void> _reload() async {
     final List<LibraryEntry> list = await ScoreLibrary.list();
-    if (mounted) setState(() => _entries = list);
+    final Map<String, File> thumbs = <String, File>{};
+    for (final LibraryEntry e in list) {
+      final File? f = await ScoreLibrary.thumbnailOf(e.key);
+      if (f != null) thumbs[e.key] = f;
+    }
+    if (!mounted) return;
+    setState(() {
+      _entries = list;
+      _thumbs
+        ..clear()
+        ..addAll(thumbs);
+    });
+    // 썸네일이 없는 곡은 연결한 유튜브 영상에서 받아 온다. 영상 ID를 저장하기
+    // 전에 연결한 곡은 원곡 맞춤 기록(받은 파일 이름)에서 찾는다.
+    for (final LibraryEntry e in list) {
+      if (thumbs.containsKey(e.key) || !e.hasOriginal) continue;
+      final String? id = e.videoId ?? await OriginalReference.recordedVideoId(e.key);
+      if (id == null) continue;
+      if (e.videoId != id) {
+        e.videoId = id;
+        await ScoreLibrary.save(e);
+      }
+      final File? f = await ScoreLibrary.saveThumbnail(e.key, id);
+      if (f != null && mounted) setState(() => _thumbs[e.key] = f);
+    }
   }
 
   Future<void> _add() async {
@@ -77,10 +106,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final List<String> parts = <String>[
       if (e.artist.isNotEmpty) e.artist,
       '${e.measures}마디',
-      if (e.repeats > 0)
-        '도돌이 ${e.repeats}개'
-      else if (e.bpm != null)
-        '♩${e.bpm!.round()}',
+      if (e.bpm != null) '♩${e.bpm!.round()}',
     ];
     return parts.join(' · ');
   }
@@ -158,12 +184,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                       for (final LibraryEntry e
                                           in entries.skip(1))
                                         TossRow(
-                                          leading: TossIconBox(
-                                            letter: e.title.isEmpty
-                                                ? '?'
-                                                : e.title.characters.first,
-                                            accent: e.hasOriginal,
-                                          ),
+                                          leading: _thumb(e),
                                           title: e.title,
                                           subtitle: _meta(e),
                                           trailing: Text(
@@ -200,6 +221,37 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// 곡 옆 그림: 연결한 원곡 영상 썸네일. 없으면 같은 크기 상자에 제목 첫 글자.
+  /// 가사 영상은 가운데에 가사 글자가 있어 자르지 않고 영상 비율(16:9) 그대로 보인다.
+  Widget _thumb(LibraryEntry e) {
+    const double w = 64, h = 36;
+    final Widget letter = Container(
+      width: w,
+      height: h,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: e.hasOriginal ? Toss.blue50 : Toss.g100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(e.title.isEmpty ? '?' : e.title.characters.first,
+          style: TextStyle(
+              fontFamily: Toss.font,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: e.hasOriginal ? Toss.blue : Toss.g600)),
+    );
+    final File? f = _thumbs[e.key];
+    if (f == null) return letter;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.file(f,
+          width: w,
+          height: h,
+          fit: BoxFit.cover,
+          errorBuilder: (BuildContext context, Object error, StackTrace? stack) => letter),
     );
   }
 

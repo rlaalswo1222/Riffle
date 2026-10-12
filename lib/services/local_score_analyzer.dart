@@ -760,28 +760,79 @@ class LocalScoreAnalyzer {
     );
   }
 
+  /// 부른 사람. 악보바다 첫 페이지는 "윤하 (YOUNHA) 노래", "너드커넥션 노래"처럼
+  /// 적는다. 작사·작곡 줄을 쓰면 작사가를 부른 사람으로 읽는다(있잖아 → 김세진).
+  /// 없으면 "한로로의 '먹이사슬' 수록곡"에서 찾고, 그래도 없으면 비워 둔다.
   String _artistFromMetadata(String fullText) {
     final List<String> lines = fullText
         .split(RegExp(r'[\r\n]+'))
         .map((line) => line.trim())
         .where((line) => line.isNotEmpty)
         .toList();
-    for (int i = 0; i + 1 < lines.length; i++) {
-      if (!RegExp(r'^(?:작사|작곡|노래|artist)$', caseSensitive: false)
-          .hasMatch(lines[i + 1])) {
-        continue;
-      }
-      final String candidate = lines[i];
-      final Match? korean = RegExp(r'\(([가-힣]{2,})\)').firstMatch(candidate);
-      return korean?.group(1) ?? candidate;
+    final RegExp credit = RegExp(r'작사|작곡|수록곡');
+
+    // "서정진 작곡 IU(아이유)의 … 수록곡 IU(아이유)"처럼 앞에 붙은 다른 정보는
+    // 잘라 내고, 괄호 속 한글 이름이 있으면 그걸, 없으면 괄호를 뺀 이름을 쓴다.
+    String clean(String raw) {
+      String s = raw;
+      final Match? before = RegExp(r'.*(?:작사|작곡|수록곡)').firstMatch(s);
+      if (before != null) s = s.substring(before.end);
+      s = s.trim();
+      final Match? korean = RegExp(r'\(([가-힣]{2,})\)').firstMatch(s);
+      if (korean != null) return korean.group(1)!;
+      return s
+          .replaceAll(RegExp(r'\([^)]*\)'), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .replaceAll(RegExp(r'^[\s,]+|[\s,]+$'), '')
+          .trim();
     }
-    final Match? inline = RegExp(
-      r'([A-Za-z가-힣]{2,}(?:\([가-힣]{2,}\))?)\s*(?:작사|작곡|노래)',
-    ).firstMatch(fullText);
-    if (inline != null) {
-      final String candidate = inline.group(1)!;
-      final Match? korean = RegExp(r'\(([가-힣]{2,})\)').firstMatch(candidate);
-      return korean?.group(1) ?? candidate;
+
+    bool nearCredit(int i) {
+      for (int k = (i - 3).clamp(0, lines.length); k <= i + 3 && k < lines.length; k++) {
+        if (credit.hasMatch(lines[k])) return true;
+      }
+      return false;
+    }
+
+    // 후보마다 점수를 매겨 가장 그럴듯한 것을 쓴다. 가사에도 "노래"가 나온다.
+    //  3: "노래" 혼자 있는 줄(바로 앞 줄이 부른 사람)
+    //  2: "X 노래"로 끝나거나 같은 줄에 수록곡 정보가 붙은 줄
+    //  1: 그 밖의 "X 노래"가 작사·작곡 줄 가까이에 있을 때
+    // "노래는 불빛처럼"처럼 단어의 일부인 "노래"와, 가사(음절 사이 "－")는 뺀다.
+    String best = '';
+    int bestScore = 0;
+    for (int i = 0; i < lines.length; i++) {
+      final String line = lines[i];
+      if (line.contains('－')) continue;
+      String name = '';
+      int score = 0;
+      if (line == '노래' && i > 0) {
+        name = clean(lines[i - 1]);
+        score = 3;
+      } else {
+        final Match? sung = RegExp(r'^(.*?)\s*노래(?![가-힣])(.*)$').firstMatch(line);
+        if (sung == null) continue;
+        name = clean(sung.group(1)!);
+        final String after = sung.group(2)!.trim();
+        if (after.isEmpty || after.contains('수록곡')) {
+          score = 2;
+        } else if (nearCredit(i)) {
+          score = 1;
+        }
+      }
+      if (name.isNotEmpty && score > bestScore) {
+        best = name;
+        bestScore = score;
+      }
+    }
+    if (best.isNotEmpty) return best;
+    for (final String line in lines) {
+      if (!line.contains('수록곡')) continue;
+      final Match? album = RegExp(r"(\S+(?:\s*\([^)]*\))?)\s*의\s*(?:\S+\s*)?'").firstMatch(line);
+      if (album != null) {
+        final String name = clean(album.group(1)!);
+        if (name.isNotEmpty) return name;
+      }
     }
     return '';
   }
